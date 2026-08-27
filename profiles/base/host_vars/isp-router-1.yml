@@ -1,0 +1,47 @@
+---
+hostname: isp-router-1
+
+loopback_interfaces:
+  - name: Loopback0
+    ip_address: 192.168.1.1/32
+
+ethernet_interfaces:
+  - name: Ethernet1
+    ip_address: 10.0.1.1/30
+    peer: edge-router-1
+    peer_interface: Ethernet1
+    description: To edge-router-1
+  - name: Ethernet2
+    ip_address: 10.0.1.5/30
+    peer: edge-router-2
+    peer_interface: Ethernet1
+    description: To edge-router-2
+
+router_bgp:
+  as: "64501"
+  router_id: 192.168.1.1
+  peer_groups:
+    - name: CUSTOMERS
+      remote_as: "65000"
+  neighbors:
+    - ip_address: 10.0.1.2
+      peer_group: CUSTOMERS
+      description: edge-router-1
+    - ip_address: 10.0.1.6
+      peer_group: CUSTOMERS
+      description: edge-router-2
+  address_family_ipv4:
+    peer_groups:
+      - name: CUSTOMERS
+        activate: true
+    networks:
+      - prefix: 203.0.113.0/24
+      - prefix: 100.64.0.0/24
+
+prefix_lists:
+  - name: PL-ISP1-ORIGINATED
+    sequence_numbers:
+      - sequence: 10
+        action: permit 203.0.113.0/24
+      - sequence: 20
+        action: permit 100.64.0.0/24

@@ -1,0 +1,24 @@
+---
+ip_routing: true
+
+management_api_http:
+  enable_vrfs:
+    - name: default
+  enable_https: true
+
+service_routing_protocols_model: multi-agent
+
+aaa_settings:
+  local_users:
+    - name: arista
+      privilege: 15
+      role: network-admin
+      sha512_password: $6$kVStlKapVY/fORPK$hIXahrIbe3xGCDiRTZV0PIAe/AXbZj60s5wSvuazVO1pi1hUI.QUEQFFL0C84YKQLnrJ8NmH9bBHBvgRdBXLw/
+    - name: admin
+      privilege: 15
+      role: network-admin
+      cleartext_password: admin
+  dns_settings:
+    domain: arista.local
+    servers:
+      - ip_address: 8.8.8.8

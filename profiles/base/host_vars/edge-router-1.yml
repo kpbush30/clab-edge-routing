@@ -1,0 +1,65 @@
+---
+hostname: edge-router-1
+
+loopback_interfaces:
+  - name: Loopback0
+    ip_address: 192.168.10.1/32
+
+ethernet_interfaces:
+  - name: Ethernet1
+    ip_address: 10.0.1.2/30
+    peer: isp-router-1
+    peer_interface: Ethernet1
+    description: To ISP1
+  - name: Ethernet2
+    ip_address: 10.0.2.2/30
+    peer: isp-router-2
+    peer_interface: Ethernet1
+    description: To ISP2
+  - name: Ethernet3
+    ip_address: 10.0.3.1/30
+    peer: edge-router-2
+    peer_interface: Ethernet3
+    description: To edge-router-2 (iBGP)
+  - name: Ethernet4
+    ip_address: 10.0.4.1/30
+    peer: core-router-1
+    peer_interface: Ethernet1
+    description: To core-router-1
+
+router_bgp:
+  as: "65000"
+  router_id: 192.168.10.1
+  peer_groups:
+    - name: ISP1
+      remote_as: "64501"
+    - name: ISP2
+      remote_as: "64502"
+    - name: EDGE-IBGP
+      remote_as: "65000"
+      next_hop_self: true
+    - name: CORE
+      remote_as: "65001"
+  neighbors:
+    - ip_address: 10.0.1.1
+      peer_group: ISP1
+      description: isp-router-1
+    - ip_address: 10.0.2.1
+      peer_group: ISP2
+      description: isp-router-2
+    - ip_address: 10.0.3.2
+      peer_group: EDGE-IBGP
+      description: edge-router-2
+    - ip_address: 10.0.4.2
+      peer_group: CORE
+      description: core-router-1
+  address_family_ipv4:
+    peer_groups:
+      - name: ISP1
+        activate: true
+      - name: ISP2
+        activate: true
+      - name: EDGE-IBGP
+        activate: true
+      - name: CORE
+        activate: true

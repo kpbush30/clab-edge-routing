@@ -1,0 +1,33 @@
+---
+route_maps:
+  - name: RM-ISP1-LOCALPREF-IN
+    sequence_numbers:
+      - sequence: 10
+        type: permit
+        set:
+          - "local-preference 200"
+  - name: RM-ISP1-PREPEND-IN
+    sequence_numbers:
+      - sequence: 10
+        type: permit
+        set:
+          - "as-path prepend 64501 64501 64501"
+  - name: RM-ISP2-MED-OUT
+    sequence_numbers:
+      - sequence: 10
+        type: permit
+        set:
+          - "metric 100"
+  - name: RM-ISP1-WEIGHT
+    sequence_numbers:
+      - sequence: 10
+        type: permit
+        set:
+          - "weight 200"
+
+router_bgp:
+  address_family_ipv4:
+    peer_groups:
+      - name: ISP1
+        activate: true
+        route_map_in: RM-ISP1-LOCALPREF-IN

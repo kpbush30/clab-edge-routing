@@ -1,0 +1,27 @@
+---
+monitor_connectivity:
+  hosts:
+    - name: ISP1-GATEWAY
+      ip: 10.0.1.1
+      local_interfaces: Ethernet1
+      address_only: false
+    - name: ISP2-GATEWAY
+      ip: 10.0.2.1
+      local_interfaces: Ethernet2
+      address_only: false
+
+event_handlers:
+  - name: ISP1-DOWN
+    trigger: on-logging
+    trigger_on_logging:
+      regex: "AGENT_CONNECTIVITY_MONITOR.*host ISP1-GATEWAY.*is now down"
+    delay: 5
+    actions:
+      bash_command: "FastCli -p 15 -c $'configure\nroute-map RM-ISP1-LOCALPREF-IN permit 10\nset local-preference 50\n!\nrouter bgp 65000\nclear bgp ipv4 unicast ISP1 soft in'"
+  - name: ISP1-UP
+    trigger: on-logging
+    trigger_on_logging:
+      regex: "AGENT_CONNECTIVITY_MONITOR.*host ISP1-GATEWAY.*is now up"
+    delay: 5
+    actions:
+      bash_command: "FastCli -p 15 -c $'configure\nroute-map RM-ISP1-LOCALPREF-IN permit 10\nset local-preference 200\n!\nrouter bgp 65000\nclear bgp ipv4 unicast ISP1 soft in'"

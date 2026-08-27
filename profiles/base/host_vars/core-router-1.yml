@@ -1,0 +1,36 @@
+---
+hostname: core-router-1
+
+loopback_interfaces:
+  - name: Loopback0
+    ip_address: 192.168.20.1/32
+
+ethernet_interfaces:
+  - name: Ethernet1
+    ip_address: 10.0.4.2/30
+    peer: edge-router-1
+    peer_interface: Ethernet4
+    description: To edge-router-1
+  - name: Ethernet2
+    ip_address: 10.0.4.6/30
+    peer: edge-router-2
+    peer_interface: Ethernet4
+    description: To edge-router-2
+
+router_bgp:
+  as: "65001"
+  router_id: 192.168.20.1
+  peer_groups:
+    - name: EDGE
+      remote_as: "65000"
+  neighbors:
+    - ip_address: 10.0.4.1
+      peer_group: EDGE
+      description: edge-router-1
+    - ip_address: 10.0.4.5
+      peer_group: EDGE
+      description: edge-router-2
+  address_family_ipv4:
+    peer_groups:
+      - name: EDGE
+        activate: true
