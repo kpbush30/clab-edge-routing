@@ -1,0 +1,54 @@
+{
+  "freeTextAnnotations": [],
+  "freeShapeAnnotations": [],
+  "trafficRateAnnotations": [],
+  "groupStyleAnnotations": [],
+  "networkNodeAnnotations": [],
+  "nodeAnnotations": [
+    {
+      "id": "isp-router1",
+      "position": {
+        "x": 480,
+        "y": 180
+      }
+    },
+    {
+      "id": "isp-router2",
+      "position": {
+        "x": 720,
+        "y": 180
+      }
+    },
+    {
+      "id": "edge-router1",
+      "position": {
+        "x": 480,
+        "y": 360
+      }
+    },
+    {
+      "id": "edge-router2",
+      "position": {
+        "x": 720,
+        "y": 360
+      }
+    },
+    {
+      "id": "core-router1",
+      "position": {
+        "x": 600,
+        "y": 540
+      }
+    },
+    {
+      "id": "isp-router3",
+      "position": {
+        "x": 600,
+        "y": 0
+      }
+    }
+  ],
+  "edgeAnnotations": [],
+  "aliasEndpointAnnotations": [],
+  "viewerSettings": {}
+}

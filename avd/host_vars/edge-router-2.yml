@@ -57,9 +57,58 @@ router_bgp:
     peer_groups:
       - name: ISP1
         activate: true
-      - name: ISP2
-        activate: true
+        route_map_in: ISP-IN
+        route_map_out: ISP-OUT
       - name: EDGE-IBGP
         activate: true
       - name: CORE
         activate: true
+        
+route_maps:
+  - name: ISP-IN
+    sequence_numbers:
+      - sequence: 10
+        type: permit
+        match:
+          - ip address prefix-list DEFAULT-ONLY
+        set:
+          - set local-preference 50
+  - name: ISP-OUT
+    sequence_numbers:
+      - sequence: 10
+        type: permit
+        match:
+          - ip address prefix-list EXTERNAL-NET
+        set:
+          - as-path prepend 65000 65000 65000
+
+event_handlers:
+  - name: ISP1-DOWN
+    trigger: on-logging
+    trigger_on_logging:
+      regex: "CONNECTIVITYMON-5-HOST_UNREACHABLE.*INTERNET.*from interface Vlan111.*"
+    delay: 0
+    actions:
+      bash_command: |
+        FastCli -p 15 -c $'configure
+        route-map ISP-IN permit 10
+        set local-preference 200
+        route-map ISP-OUT permit 10
+        no set as-path prepend 65000 65000 65000
+        !
+        clear bgp peer-group ISP1 soft in'
+        
+  - name: ISP1-UP
+    trigger: on-logging
+    trigger_on_logging:
+      regex: "CONNECTIVITYMON-5-HOST_REACHABLE.*INTERNET.*from interface Vlan111.*"
+    delay: 5
+    actions:
+      bash_command: |
+        FastCli -p 15 -c $'configure
+        route-map ISP-IN permit 10
+        set local-preference 50
+        route-map ISP-OUT permit 10
+        set as-path prepend 65000 65000 65000
+        !
+        clear bgp peer-group ISP1 soft in'

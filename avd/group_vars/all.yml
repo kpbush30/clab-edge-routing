@@ -1,4 +1,8 @@
 ---
+
+custom_structured_configuration_prefix: ['csc_', 'custom', 'custom_structured_config']
+custom_structured_configuration_list_merge: "append_rp"
+
 ip_routing: true
 
 management_api_http:

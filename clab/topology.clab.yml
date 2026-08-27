@@ -1,0 +1,89 @@
+name: edge-routing
+
+prefix: ""
+
+mgmt:
+  network: edge-routing-mgmt
+  ipv4-subnet: 192.168.130.0/24
+
+topology:
+  kinds:
+    arista_ceos:
+      image: ceos:4.35.6M
+      enforce-startup-config: true
+      env:
+        CLAB_MGMT_VRF: MGMT
+        INTFTYPE: et
+
+  nodes:
+    isp-router1:
+      kind: arista_ceos
+      mgmt-ipv4: 192.168.130.2
+      startup-config: configs/isp-router1.cfg
+      binds:
+        - sn/isp-router1.txt:/mnt/flash/ceos-config:ro
+        - cv-onboarding-token:/mnt/flash/cv-onboarding-token
+    isp-router2:
+      kind: arista_ceos
+      mgmt-ipv4: 192.168.130.3
+      startup-config: configs/isp-router2.cfg
+      binds:
+        - sn/isp-router2.txt:/mnt/flash/ceos-config:ro
+        - cv-onboarding-token:/mnt/flash/cv-onboarding-token
+
+    isp-router3:
+      kind: arista_ceos
+      mgmt-ipv4: 192.168.130.200
+      startup-config: configs/isp-router3.cfg
+      binds:
+        - sn/isp-router3.txt:/mnt/flash/ceos-config:ro
+        - cv-onboarding-token:/mnt/flash/cv-onboarding-token
+
+    edge-router1:
+      kind: arista_ceos
+      mgmt-ipv4: 192.168.130.4
+      startup-config: configs/edge-router1.cfg
+      binds:
+        - sn/edge-router1.txt:/mnt/flash/ceos-config:ro
+        - cv-onboarding-token:/mnt/flash/cv-onboarding-token
+
+    edge-router2:
+      kind: arista_ceos
+      mgmt-ipv4: 192.168.130.5
+      startup-config: configs/edge-router2.cfg
+      binds:
+        - sn/edge-router2.txt:/mnt/flash/ceos-config:ro
+        - cv-onboarding-token:/mnt/flash/cv-onboarding-token
+
+    core-router1:
+      kind: arista_ceos
+      mgmt-ipv4: 192.168.130.6
+      startup-config: configs/core-router1.cfg
+      binds:
+        - sn/core-router1.txt:/mnt/flash/ceos-config:ro
+        - cv-onboarding-token:/mnt/flash/cv-onboarding-token
+  links:
+    - endpoints:
+        - edge-router1:et1
+        - isp-router1:et1
+    - endpoints:
+        - edge-router1:et2
+        - core-router1:et1
+    - endpoints:
+        - edge-router1:et3
+        - edge-router2:et3
+    - endpoints:
+        - edge-router1:et4
+        - edge-router2:et4
+    - endpoints:
+        - edge-router2:et1
+        - isp-router2:et1
+    - endpoints:
+        - edge-router2:et2
+        - core-router1:et2
+    - endpoints:
+        - isp-router1:et2
+        - isp-router3:et1
+    - endpoints:
+        - isp-router2:et2
+        - isp-router3:et2

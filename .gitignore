@@ -4,8 +4,10 @@
 .mypy_cache/
 .ruff_cache/
 specs/
-avd/
-PingCheck/
+startup-configs/
+
+clab-edge-routing
+cv-onboarding-token
 
 # Python-generated files
 __pycache__/

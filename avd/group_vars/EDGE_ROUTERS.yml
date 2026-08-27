@@ -1,0 +1,29 @@
+---
+
+csc_prefix_lists:
+
+  - name: DEFAULT-ONLY
+    sequence_numbers:
+      - sequence: 10
+        action: permit 0.0.0.0/0
+
+  - name: EXTERNAL-NET
+    sequence_numbers:
+      - sequence: 10
+        action: permit 11.11.11.0/24
+
+csc_trackers:
+  - name: TRACK-ISP1-UPLINK
+    interface: Ethernet1
+    tracked_property: line-protocol
+
+csc_monitor_connectivity:
+  hosts:
+    - name: INTERNET
+      ip: 100.64.0.1
+      local_interfaces: Ethernet1
+      address_only: false
+    - name: ISP2-GATEWAY
+      ip: 10.0.2.1
+      local_interfaces: Ethernet2
+      address_only: false
