@@ -17,7 +17,7 @@ help:
 	@echo "any target with sudo, e.g.: sudo make deploy"
 
 deploy:
-	containerlab deploy -t $(TOPO)
+	sudo containerlab deploy --debug -t $(TOPO) --max-workers 10 --timeout 5m --reconfigure
 
 status:
 	containerlab inspect -t $(TOPO)
