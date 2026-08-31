@@ -1,117 +1,116 @@
 # Edge Routing Resiliency Lab
 
-A containerlab-based lab using Arista cEOS to teach edge routing resiliency concepts. Deploy a dual-homed internet edge topology and explore how BGP attributes, connectivity monitoring, and interface tracking provide different strategies for ISP failover.
+A containerlab topology built with Arista cEOS that demonstrates a dual-homed
+internet edge: two ISPs, an MLAG-paired edge router pair speaking iBGP, and a
+core router behind them. It shows two different failover mechanisms working
+together — BFD for fast hard-failure detection, and EOS connectivity monitor
++ event-handlers for detecting "soft" failures that BGP and BFD alone can't
+see. See [docs/failover.md](docs/failover.md) for the full mechanics and
+step-by-step scenarios.
 
-## Topology
+> **Status:** This lab is not yet driven by Arista AVD. Everything ships as
+> static, hand-written EOS startup-configs (`clab/configs/*.cfg`) that boot
+> the devices straight into a fully working state — **no config push step is
+> required**. AVD-based config generation (see `avd/`) is planned but not
+> wired up yet; ignore that directory for now.
 
-```
-                    ┌──────────────┐
-                    │ isp-router-1 │
-                    │  AS 64501    │
-                    └──┬────────┬──┘
-                  Eth1 │        │ Eth2
-                       │        │
-                  Eth1 │        │ Eth1
-              ┌────────┴──┐  ┌──┴────────┐
-              │edge-rtr-1 │──│edge-rtr-2 │  (iBGP: Eth3 ↔ Eth3)
-              │  AS 65000 │  │  AS 65000 │
-              └────┬───┬──┘  └──┬───┬────┘
-              Eth2 │   │ Eth4   │   │ Eth4
-                   │   │        │   │
-              Eth1 │   │   Eth1 │   │
-                ┌──┴───┴────┴──┐│   │
-                │ isp-router-2 ││   │
-                │  AS 64502    │└───┘
-                └──────────────┘Eth2 │
-                                    │
-                Eth1 ┌──────────────┴──┐ Eth2
-                     │  core-router-1  │
-                     │    AS 65001     │
-                     └─────────────────┘
-```
-
-Five devices: 2 ISP routers originating prefixes, 2 edge routers (iBGP pair), and 1 core router receiving routes via eBGP.
+Six nodes: `isp-router3` (simulated internet), two ISPs (`isp-router1`
+primary, `isp-router2` backup), an MLAG/iBGP edge router pair
+(`edge-router1`/`edge-router2`), and `core-router1` behind them. Full diagram
+and per-node details: [docs/topology.md](docs/topology.md).
 
 ## Prerequisites
 
 - [containerlab](https://containerlab.dev/) installed
-- Arista cEOS image imported (`ceos:latest`)
-- Python 3.11+
-- [uv](https://docs.astral.sh/uv/) (recommended) or pip
+- Docker
+- An Arista cEOS-lab image — **you need to supply your own**, downloaded from
+  [arista.com](https://www.arista.com/en/support/software-download) (requires
+  a free Arista account). This lab does not, and cannot, ship the image.
+- (Optional) A CloudVision onboarding token, if you want the lab to stream
+  telemetry to CloudVision.
 
 ## Setup
 
-```bash
-git clone <repo-url>
-cd clab-edge-routing
-uv sync  # or: pip install -e .
-```
-
-## Quick Start
+**1. Import your cEOS image into Docker and point the topology at it.**
 
 ```bash
-make lab PROFILE=base
+docker import cEOS-lab-<version>.tar.xz ceos:<version>
 ```
 
-This deploys all 5 nodes and runs validation tests to confirm BGP is fully operational.
+Then edit `clab/topology.clab.yml` and update the image tag under
+`topology.kinds.arista_ceos.image` to match what you just imported.
 
-## Learning Path
+**2. Provide (or skip) a CloudVision onboarding token.**
 
-Work through the profiles in order. Each builds on the previous one.
-
-| # | Profile | Difficulty | Description |
-|---|---------|------------|-------------|
-| 1 | [base](profiles/base/README.md) | Beginner | Deploy a dual-homed BGP topology, observe default path selection |
-| 2 | [bgp-attributes](profiles/bgp-attributes/README.md) | Intermediate | Manipulate local-preference, AS-path, MED, and weight |
-| 3a | [monitor-connectivity](profiles/monitor-connectivity/README.md) | Intermediate | Automated failover via event-handler + FastCli |
-| 3b | [pingcheck](profiles/pingcheck/README.md) | Intermediate | Automated failover via PingCheck EOS SDK extension |
-| 4 | [interface-tracking](profiles/interface-tracking/README.md) | Intermediate | Conditional routing via track objects |
-
-Profiles 3a and 3b are alternatives — they demonstrate two different approaches to the same failover problem.
-
-## Usage
+The topology binds `clab/cv-onboarding-token` into every node for the
+`TerminAttr` daemon. The file must exist for the bind mount to work, even if
+you don't plan to use CloudVision:
 
 ```bash
-# Deploy a profile
-make deploy PROFILE=base
-
-# Switch to a different profile (without restarting containers)
-make switch PROFILE=bgp-attributes
-
-# Run validation tests
-make validate PROFILE=bgp-attributes
-
-# Full lifecycle (deploy + validate)
-make lab PROFILE=base
-
-# Tear down the lab
-make destroy
-
-# Clean generated artifacts
-make clean
+# To stream to CloudVision: paste your real onboarding token in this file
+# To skip CloudVision entirely: just create an empty file
+touch clab/cv-onboarding-token
 ```
 
-## Project Structure
+If you do want CloudVision streaming to work, the containerlab management
+network needs a route to your CVaaS/on-prem cluster — that's on you to set
+up (routing, NAT, or a management-network uplink); it's outside the scope of
+this lab.
 
-```
-├── profiles/                    # Configuration profiles
-│   ├── base/                    # Base BGP topology
-│   ├── bgp-attributes/          # Route-map attribute manipulation
-│   ├── monitor-connectivity/    # Event-handler failover
-│   ├── pingcheck/               # PingCheck extension failover
-│   └── interface-tracking/      # Track object conditional routing
-├── inventory/                   # Ansible inventory (shared across profiles)
-├── scripts/                     # Build, deploy, and validate tooling
-├── tests/                       # pytest validation suites per profile
-├── PingCheck/                   # PingCheck EOS SDK extension (vendored)
-├── avd/                         # Arista AVD (local clone for config generation)
-└── Makefile                     # User-facing CLI targets
+## Deploy the lab
+
+```bash
+make deploy
 ```
 
-## How It Works
+Because every node boots from a complete startup-config already
+(`enforce-startup-config: true`), **the lab is fully operational the moment
+the containers come up** — BGP, BFD, MLAG, and connectivity monitor are all
+already configured and running. There is nothing to push.
 
-1. **Build**: AVD `eos_cli_config_gen` renders EOS CLI configs from structured YAML (`profiles/<name>/host_vars/`)
-2. **Topology**: A script generates a containerlab topology file from the AVD structured config
-3. **Deploy**: containerlab creates cEOS containers with the generated configs
-4. **Switch**: pyeapi pushes new configs via eAPI without restarting containers
-5. **Validate**: pytest tests verify BGP state, route tables, and failover behavior via eAPI
+```bash
+make status                       # confirm all nodes are running
+docker exec -it edge-router1 Cli   # log in (containers are named after the node — the topology sets prefix: "")
+```
+
+> NOTE: All devices can be accessed using arista/arista
+
+Baseline sanity check from `edge-router1`: `show ip bgp summary`, `show bfd
+peers`, and `show monitor connectivity host` should all be healthy, with
+`show ip route 1.1.1.1` preferred via ISP1 (Ethernet1).
+
+## Trigger a failover
+
+- **Hard failure (BFD):** shut down the ISP1 link and watch BFD/BGP react in
+  under a second.
+- **Soft failure (connectivity monitor):** black-hole just the monitored
+  destination on `isp-router1` and watch the event-handler fail over while
+  the ISP1 link and BGP session stay fully up.
+
+Both scenarios, exact commands, and where to watch the route change:
+[docs/failover.md](docs/failover.md).
+
+## Destroy or recreate the lab
+
+```bash
+make destroy    # tear down, keep generated lab files (TLS certs, etc.)
+make clean      # tear down and remove all generated lab files
+make recreate   # destroy + deploy in one step, fresh boot
+```
+
+If your containerlab/Docker setup requires elevated privileges, prefix any
+of these with `sudo`, e.g. `sudo make deploy`.
+
+## Project structure
+
+```
+├── clab/
+│   ├── topology.clab.yml   # containerlab topology (nodes, links, image)
+│   ├── configs/            # EOS startup-configs, one per node — the source of truth
+│   ├── sn/                 # per-node serial number / system MAC files (cEOS identity)
+│   └── cv-onboarding-token # CloudVision onboarding token (gitignored; create your own)
+├── docs/                   # topology diagram and failover walkthroughs
+├── avd/                    # Arista AVD structured config — not wired up yet
+├── Makefile                # deploy / status / recreate / destroy / clean
+└── README.md
+```

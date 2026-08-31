@@ -1,45 +1,33 @@
-VALID_PROFILES := base bgp-attributes monitor-connectivity pingcheck interface-tracking
+TOPO ?= clab/topology.clab.yml
 
-define check_profile
-	@if [ -z "$(PROFILE)" ]; then \
-		echo "Error: PROFILE is required. Valid: $(VALID_PROFILES)"; \
-		exit 1; \
-	fi
-	@if ! echo "$(VALID_PROFILES)" | grep -qw "$(PROFILE)"; then \
-		echo "Error: invalid profile '$(PROFILE)'. Valid: $(VALID_PROFILES)"; \
-		exit 1; \
-	fi
-endef
+.DEFAULT_GOAL := help
 
-.PHONY: build topology deploy switch validate destroy lab clean
+.PHONY: help deploy status recreate destroy clean
 
-build:
-	$(call check_profile)
-	python3 scripts/generate_configs.py --profile $(PROFILE)
-
-topology:
-	$(call check_profile)
-	python3 scripts/generate_topology.py --profile $(PROFILE)
+help:
+	@echo "Edge Routing Resiliency Lab"
+	@echo ""
+	@echo "  make deploy     Deploy the lab from its startup configs"
+	@echo "  make status     Show running nodes, mgmt IPs, and ports"
+	@echo "  make recreate   Destroy and redeploy from scratch (fresh boot)"
+	@echo "  make destroy    Tear down the lab, keep generated lab files"
+	@echo "  make clean      Tear down the lab and remove generated lab files"
+	@echo ""
+	@echo "If your containerlab/docker setup needs elevated privileges, prefix"
+	@echo "any target with sudo, e.g.: sudo make deploy"
 
 deploy:
-	$(call check_profile)
-	python3 scripts/deploy.py --profile $(PROFILE)
+	containerlab deploy -t $(TOPO)
 
-switch:
-	$(call check_profile)
-	python3 scripts/deploy.py --profile $(PROFILE) --switch-only
+status:
+	containerlab inspect -t $(TOPO)
 
-validate:
-	$(call check_profile)
-	python3 scripts/validate.py --profile $(PROFILE)
+recreate:
+	containerlab destroy -t $(TOPO) --cleanup
+	containerlab deploy -t $(TOPO)
 
 destroy:
-	containerlab destroy --topo topology.yml --cleanup
-
-lab:
-	$(call check_profile)
-	$(MAKE) deploy PROFILE=$(PROFILE)
-	$(MAKE) validate PROFILE=$(PROFILE)
+	containerlab destroy -t $(TOPO)
 
 clean:
-	rm -rf intended/configs/ topology.yml
+	containerlab destroy -t $(TOPO) --cleanup
